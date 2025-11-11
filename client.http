@@ -1,0 +1,7 @@
+### Text
+
+GET http://localhost:5877/text
+
+### JSON
+
+GET http://localhost:5877/json

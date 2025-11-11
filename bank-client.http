@@ -1,0 +1,68 @@
+@BaseURL = http://localhost:5888
+
+### Get Currencies
+
+GET {{BaseURL}}/api/currencies
+
+### Create Currency
+
+POST {{BaseURL}}/api/currencies
+Content-Type: application/json
+
+{
+  "id": "TWD",
+  "decimals": 0
+}
+
+### Create Account
+
+POST {{BaseURL}}/api/accounts
+Content-Type: application/json
+
+{
+  "name": "account 2",
+  "currency": "TWD",
+  "idempotency_key": "321"
+}
+
+### Get Account 1
+
+GET {{BaseURL}}/api/accounts/1988447843160948736/info
+
+### Get Account 2
+
+GET {{BaseURL}}/api/accounts/1988455130948698112/info
+
+### Deposit to Account 1
+
+POST {{BaseURL}}/api/deposits
+Content-Type: application/json
+
+{
+  "account_id": 1988447843160948736,
+  "amount": 100,
+  "idempotency_key": "{{$uuid}}"
+}
+
+### Withdraw from Account 1
+
+POST {{BaseURL}}/api/withdrawals
+Content-Type: application/json
+
+{
+  "account_id": 1988447843160948736,
+  "amount": 1,
+  "idempotency_key": "{{$uuid}}"
+}
+
+### Transfer from Account 1 to Account 2
+
+POST {{BaseURL}}/api/transfers
+Content-Type: application/json
+
+{
+  "account_id_from": 1988447843160948736,
+  "account_id_to": 1988455130948698112,
+  "amount": 1,
+  "idempotency_key": "{{$uuid}}"
+}

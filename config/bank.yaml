@@ -1,0 +1,5 @@
+nodeID: 0
+dbURLFormat: 'postgres://%s:%s@localhost:15432/bank?sslmode=disable'
+dbMaxConnections: 10
+dbUsername: 'bank_user'
+dbPassword: 'bank_user_pass'
