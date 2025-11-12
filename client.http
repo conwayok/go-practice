@@ -5,3 +5,12 @@ GET http://localhost:5877/text
 ### JSON
 
 GET http://localhost:5877/json
+
+### Job Queue Add
+
+POST http://localhost:5891/api/jobs
+Content-Type: application/json
+
+{
+  "data": "hello"
+}

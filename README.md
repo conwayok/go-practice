@@ -29,3 +29,14 @@ Learning points:
 * Database operations with pgx
 * Error handling
 * Logging with `slog`
+
+## Job Queue
+
+`cmd/jobqueue/main.go`
+
+Job queue using goroutines and channels with an async-backed synchronous API.
+
+Learning points:
+
+* Concurrency with goroutines and channels
+* Pattern for handling HTTP requests in an async way.
