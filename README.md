@@ -40,3 +40,14 @@ Learning points:
 
 * Concurrency with goroutines and channels
 * Pattern for handling HTTP requests in an async way.
+
+## Node Talk
+
+`cmd/nodetalk/main.go`
+
+Simulation of two "nodes" talking to each other over channels this can be later expanded on to implement consensus
+algorithms such as Raft.
+
+Learning points:
+
+* Goroutines and channels
