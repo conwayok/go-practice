@@ -51,3 +51,15 @@ algorithms such as Raft.
 Learning points:
 
 * Goroutines and channels
+
+## Raft (wip)
+
+`cmd/raft/main.go`
+
+Simple implementation of the Raft consensus algorithm with in-memory transport. Currently work in progress, starting
+with the leader election
+mechanism.
+
+Learning points:
+
+* Advanced concurrency with channels
