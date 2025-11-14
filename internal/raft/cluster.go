@@ -9,7 +9,7 @@ type Cluster interface {
 	Tick(tick int)
 	GetRole(id int) Role
 	GetLeader() int
-	WaitForLeader(timeout int)
+	WaitForLeader(timeout int) int
 }
 
 type cluster struct {
@@ -66,7 +66,7 @@ func (c *cluster) GetLeader() int {
 	return 0
 }
 
-func (c *cluster) WaitForLeader(timeout int) {
+func (c *cluster) WaitForLeader(timeout int) int {
 	tick := 0
 
 	for {
@@ -74,7 +74,7 @@ func (c *cluster) WaitForLeader(timeout int) {
 		leaderID := c.GetLeader()
 
 		if leaderID != 0 {
-			return
+			return 0
 		}
 
 		tick++
@@ -83,4 +83,6 @@ func (c *cluster) WaitForLeader(timeout int) {
 			panic("no leader found after timeout " + fmt.Sprint(timeout))
 		}
 	}
+
+	return tick
 }
