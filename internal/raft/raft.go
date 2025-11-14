@@ -83,7 +83,7 @@ func (p *DirectPeer) AppendEntries(req AppendEntriesRequest) {
 
 		req.ReplyCh <- AppendEntriesResponseEvent{From: p.node.ID, Response: response}
 
-		p.logger.Info("AppendEntries", "from", req.LeaderID, "to", p.id, "response", req, "response", response)
+		p.logger.Info("AppendEntries", "from", req.LeaderID, "to", p.id, "request", req, "response", response)
 	}()
 }
 
