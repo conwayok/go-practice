@@ -45,8 +45,7 @@ Learning points:
 
 `cmd/nodetalk/main.go`
 
-Simulation of two "nodes" talking to each other over channels this can be later expanded on to implement consensus
-algorithms such as Raft.
+Simulation of two "nodes" talking to each other over channels.
 
 Learning points:
 
@@ -62,4 +61,5 @@ mechanism.
 
 Learning points:
 
-* Advanced concurrency with channels
+* More advanced concurrency
+* Deterministic testing of time sensitive code
