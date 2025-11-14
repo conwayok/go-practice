@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// run the cluster for 30 seconds
-	done := time.After(30 * time.Second)
+	done := time.After(10 * time.Second)
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
@@ -17,13 +17,13 @@ func main() {
 	node2 := raft.NewNode(2, logger.With("node", 2), []int{1, 3}, 5, 1)
 	node3 := raft.NewNode(3, logger.With("node", 3), []int{1, 2}, 7, 1)
 
-	cluster := raft.NewCluster([]raft.Node{node1, node2, node3}, logger)
+	cluster := raft.NewTestCluster([]raft.Node{node1, node2, node3}, logger)
 
 	tick := 1
 
 	for {
 		select {
-		case <-time.After(1 * time.Second):
+		case <-time.After(100 * time.Millisecond):
 			cluster.Tick(tick)
 			tick++
 		case <-done:

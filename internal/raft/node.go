@@ -267,7 +267,7 @@ func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, 
 	// same terms, proceed
 
 	if n.role == RoleLeader {
-		panic("received append entries request in leader role with same term, split brain happened")
+		panic("split brain detected")
 	}
 
 	successResponse := Message{
@@ -302,7 +302,6 @@ func (n *node) handleTick(logger *slog.Logger, tick int) {
 		ticksSinceLastHeartbeatSent := tick - n.lastHeartbeatSentAt
 
 		if ticksSinceLastHeartbeatSent >= n.heartbeatInterval {
-			logger.Info("sending heartbeats")
 			n.broadcastHeartbeats()
 		}
 
@@ -316,7 +315,7 @@ func (n *node) handleTick(logger *slog.Logger, tick int) {
 	if ticksSinceLastHeartbeatReceived >= n.electionTimeout {
 		term := n.term + 1
 
-		logger.Info("electionTimeout reached, starting election", "newTerm", term)
+		logger.Info("starting election", "newTerm", term)
 
 		n.becomeCandidate(term)
 
