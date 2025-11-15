@@ -24,7 +24,7 @@ func main() {
 	for {
 		select {
 		case <-time.After(100 * time.Millisecond):
-			cluster.Tick(tick)
+			cluster.AdvanceTicks(tick)
 			tick++
 		case <-done:
 			return

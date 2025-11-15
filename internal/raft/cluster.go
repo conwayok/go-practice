@@ -6,7 +6,7 @@ import (
 )
 
 type TestCluster interface {
-	Tick(tick int)
+	AdvanceTicks(tick int)
 	GetRole(id int) Role
 	WaitForLeader(timeout int) (leaderID, tick int)
 	EnableNode(id int)
@@ -29,7 +29,7 @@ func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
 }
 
-func (tc *testCluster) Tick(tick int) {
+func (tc *testCluster) AdvanceTicks(tick int) {
 	for _, n := range tc.nodes {
 		n.Step(Tick{}, tick)
 	}
@@ -85,7 +85,7 @@ func (tc *testCluster) WaitForLeader(timeout int) (leaderID, tick int) {
 	tick = 0
 
 	for {
-		tc.Tick(tick)
+		tc.AdvanceTicks(tick)
 		leaderID := tc.getLeader()
 
 		if leaderID != 0 {

@@ -34,7 +34,7 @@ func TestRaft(t *testing.T) {
 
 				tick := node1ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				// node1 should be elected first
 				require.Equal(t, RoleLeader, cluster.GetRole(1))
@@ -43,7 +43,7 @@ func TestRaft(t *testing.T) {
 
 				tick = tick + node2ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				require.Equal(t, RoleLeader, cluster.GetRole(2))
 			},
@@ -55,20 +55,20 @@ func TestRaft(t *testing.T) {
 				tick := node1ElectionTimeout
 
 				// node1 is elected leader
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				cluster.DisableNode(1)
 
 				tick = tick + node2ElectionTimeout
 
 				// node 2 now elected leader
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				cluster.EnableNode(1)
 
 				tick = tick + heartbeatInterval
 
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				require.Equal(t, RoleFollower, cluster.GetRole(1))
 			},
@@ -82,13 +82,13 @@ func TestRaft(t *testing.T) {
 
 				tick := node3ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(3))
 
 				tick = tick + 999
 
-				cluster.Tick(tick)
+				cluster.AdvanceTicks(tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(3))
 			},
