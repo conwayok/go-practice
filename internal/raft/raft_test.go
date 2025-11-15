@@ -8,7 +8,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRaft(t *testing.T) {
+func TestRaftSingleNode(t *testing.T) {
+	electionTimeout := 10
+	heartbeatInterval := 2
+
+	testCases := []struct {
+		name     string
+		testFunc func(t *testing.T, cluster TestCluster)
+	}{
+		{
+			name: "single node will elect itself as leader",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+				cluster.Tick(electionTimeout)
+				require.Equal(t, RoleLeader, cluster.GetRole(1))
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+			node1 := NewNode(1, logger.With("node", 1), make([]int, 0), electionTimeout, heartbeatInterval)
+
+			cluster := NewTestCluster([]Node{node1}, logger)
+
+			testCase.testFunc(t, cluster)
+		})
+	}
+}
+
+func TestRaftClusterElection(t *testing.T) {
 	node1ElectionTimeout := 10
 	node2ElectionTimeout := 15
 	node3ElectionTimeout := 20
@@ -34,7 +64,7 @@ func TestRaft(t *testing.T) {
 
 				tick := node1ElectionTimeout
 
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				// node1 should be elected first
 				require.Equal(t, RoleLeader, cluster.GetRole(1))
@@ -43,7 +73,7 @@ func TestRaft(t *testing.T) {
 
 				tick = tick + node2ElectionTimeout
 
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				require.Equal(t, RoleLeader, cluster.GetRole(2))
 			},
@@ -55,20 +85,20 @@ func TestRaft(t *testing.T) {
 				tick := node1ElectionTimeout
 
 				// node1 is elected leader
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				cluster.DisableNode(1)
 
 				tick = tick + node2ElectionTimeout
 
 				// node 2 now elected leader
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				cluster.EnableNode(1)
 
 				tick = tick + heartbeatInterval
 
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				require.Equal(t, RoleFollower, cluster.GetRole(1))
 			},
@@ -82,13 +112,13 @@ func TestRaft(t *testing.T) {
 
 				tick := node3ElectionTimeout
 
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(3))
 
 				tick = tick + 999
 
-				cluster.AdvanceTicks(tick)
+				cluster.Tick(tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(3))
 			},
@@ -106,5 +136,4 @@ func TestRaft(t *testing.T) {
 			testCase.testFunc(t, cluster)
 		})
 	}
-
 }

@@ -319,6 +319,13 @@ func (n *node) handleTick(logger *slog.Logger, tick int) {
 
 		n.becomeCandidate(term)
 
+		// special case for single node cluster, become leader immediately
+		if len(n.peerIDs) == 0 {
+			n.becomeLeader(n.term)
+			n.broadcastHeartbeats()
+			return
+		}
+
 		for _, peerID := range n.peerIDs {
 			n.outbox = append(n.outbox, Message{
 				From: n.id,
