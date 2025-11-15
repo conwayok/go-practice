@@ -73,6 +73,26 @@ func TestRaft(t *testing.T) {
 				require.Equal(t, RoleFollower, cluster.GetRole(1))
 			},
 		},
+		{
+			name: "candidate cannot become leader if not received majority vote",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+
+				cluster.DisableNode(1)
+				cluster.DisableNode(2)
+
+				tick := node3ElectionTimeout
+
+				cluster.Tick(tick)
+
+				require.Equal(t, RoleCandidate, cluster.GetRole(3))
+
+				tick = tick + 999
+
+				cluster.Tick(tick)
+
+				require.Equal(t, RoleCandidate, cluster.GetRole(3))
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
