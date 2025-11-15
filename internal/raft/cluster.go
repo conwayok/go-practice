@@ -26,6 +26,10 @@ func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
 		nodesMap[node.ID()] = node
 	}
 
+	if len(nodesMap) != len(nodes) {
+		panic("detected duplicate node IDs")
+	}
+
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
 }
 

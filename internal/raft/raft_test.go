@@ -42,6 +42,8 @@ func TestRaftClusterElection(t *testing.T) {
 	node1ElectionTimeout := 10
 	node2ElectionTimeout := 15
 	node3ElectionTimeout := 20
+	node4ElectionTimeout := 25
+	node5ElectionTimeout := 30
 	heartbeatInterval := 2
 
 	testCases := []struct {
@@ -55,7 +57,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				role := cluster.GetRole(1)
 
-				require.NotEqual(t, RoleLeader, role)
+				require.Equal(t, RoleLeader, role)
 			},
 		},
 		{
@@ -109,18 +111,19 @@ func TestRaftClusterElection(t *testing.T) {
 
 				cluster.DisableNode(1)
 				cluster.DisableNode(2)
+				cluster.DisableNode(3)
 
-				tick := node3ElectionTimeout
+				tick := node4ElectionTimeout
 
 				cluster.Tick(tick)
 
-				require.Equal(t, RoleCandidate, cluster.GetRole(3))
+				require.Equal(t, RoleCandidate, cluster.GetRole(4))
 
 				tick = tick + 999
 
 				cluster.Tick(tick)
 
-				require.Equal(t, RoleCandidate, cluster.GetRole(3))
+				require.Equal(t, RoleCandidate, cluster.GetRole(4))
 			},
 		},
 	}
@@ -128,10 +131,12 @@ func TestRaftClusterElection(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			node1 := NewNode(1, logger.With("node", 1), []int{2, 3}, node1ElectionTimeout, heartbeatInterval)
-			node2 := NewNode(2, logger.With("node", 2), []int{1, 3}, node2ElectionTimeout, heartbeatInterval)
-			node3 := NewNode(3, logger.With("node", 3), []int{1, 2}, node3ElectionTimeout, heartbeatInterval)
-			cluster := NewTestCluster([]Node{node1, node2, node3}, logger)
+			node1 := NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
+			node2 := NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
+			node3 := NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)
+			node4 := NewNode(4, logger.With("node", 4), []int{1, 2, 3, 5}, node4ElectionTimeout, heartbeatInterval)
+			node5 := NewNode(5, logger.With("node", 5), []int{1, 2, 3, 4}, node5ElectionTimeout, heartbeatInterval)
+			cluster := NewTestCluster([]Node{node1, node2, node3, node4, node5}, logger)
 
 			testCase.testFunc(t, cluster)
 		})
