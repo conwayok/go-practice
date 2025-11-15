@@ -19,7 +19,7 @@ func main() {
 
 	cluster := raft.NewTestCluster([]raft.Node{node1, node2, node3}, logger)
 
-	tick := 1
+	tick := int64(1)
 
 	for {
 		select {

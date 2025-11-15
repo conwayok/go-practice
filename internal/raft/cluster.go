@@ -6,17 +6,27 @@ import (
 )
 
 type TestCluster interface {
-	Tick(tick int)
+	Tick(tick int64)
 	GetRole(id int) Role
-	WaitForLeader(timeout int) (leaderID, tick int)
+	WaitForLeader(timeout int64) (leaderID int, tick int64)
 	EnableNode(id int)
 	DisableNode(id int)
+	NodeCount() int
+	GetTerm(id int) int
 }
 
 type testCluster struct {
 	nodes         map[int]Node
 	logger        *slog.Logger
 	disabledNodes map[int]bool
+}
+
+func (tc *testCluster) GetTerm(id int) int {
+	return tc.nodes[id].Term()
+}
+
+func (tc *testCluster) NodeCount() int {
+	return len(tc.nodes)
 }
 
 func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
@@ -33,7 +43,7 @@ func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
 }
 
-func (tc *testCluster) Tick(tick int) {
+func (tc *testCluster) Tick(tick int64) {
 	for _, n := range tc.nodes {
 		n.Step(Tick{}, tick)
 	}
@@ -85,7 +95,7 @@ func (tc *testCluster) getLeader() int {
 	return 0
 }
 
-func (tc *testCluster) WaitForLeader(timeout int) (leaderID, tick int) {
+func (tc *testCluster) WaitForLeader(timeout int64) (leaderID int, tick int64) {
 	tick = 0
 
 	for {

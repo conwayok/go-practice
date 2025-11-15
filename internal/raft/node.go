@@ -42,7 +42,7 @@ type Node interface {
 	ID() int
 	Role() Role
 	Term() int
-	Step(event Event, tick int)
+	Step(event Event, tick int64)
 
 	// Outbox Returns all outgoing messages that need to be sent to other nodes
 	Outbox() []Message
@@ -57,15 +57,15 @@ type node struct {
 	outbox                  []Message
 	peerIDs                 []int
 	logger                  *slog.Logger
-	lastHeartbeatSentAt     int
-	lastHeartbeatReceivedAt int
-	electionTimeout         int
-	heartbeatInterval       int
+	lastHeartbeatSentAt     int64
+	lastHeartbeatReceivedAt int64
+	electionTimeout         int64
+	heartbeatInterval       int64
 	votedFor                int
 	votesReceived           int
 }
 
-func NewNode(id int, logger *slog.Logger, peerIDs []int, electionTimeout int, heartbeatInterval int) Node {
+func NewNode(id int, logger *slog.Logger, peerIDs []int, electionTimeout int64, heartbeatInterval int64) Node {
 	return &node{
 		id:                id,
 		role:              RoleFollower,
@@ -106,7 +106,7 @@ func (n *node) captureDebugState() debugState {
 	}
 }
 
-func (n *node) Step(event Event, tick int) {
+func (n *node) Step(event Event, tick int64) {
 
 	logger := n.logger.With("tick", tick)
 
@@ -241,7 +241,7 @@ func (n *node) handleAppendEntriesResponse(message Message) {
 	}
 }
 
-func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, tick int) {
+func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, tick int64) {
 	if message.Type != MessageTypeAppendEntriesReq {
 		panic(fmt.Sprintf("expected %s but got %s", MessageTypeAppendEntriesReq, message.Type))
 	}
@@ -297,7 +297,7 @@ func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, 
 	panic("unknown role: " + n.role)
 }
 
-func (n *node) handleTick(logger *slog.Logger, tick int) {
+func (n *node) handleTick(logger *slog.Logger, tick int64) {
 	if n.role == RoleLeader {
 		ticksSinceLastHeartbeatSent := tick - n.lastHeartbeatSentAt
 

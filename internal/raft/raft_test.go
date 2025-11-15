@@ -9,8 +9,8 @@ import (
 )
 
 func TestRaftSingleNode(t *testing.T) {
-	electionTimeout := 10
-	heartbeatInterval := 2
+	electionTimeout := int64(10)
+	heartbeatInterval := int64(2)
 
 	testCases := []struct {
 		name     string
@@ -39,12 +39,12 @@ func TestRaftSingleNode(t *testing.T) {
 }
 
 func TestRaftClusterElection(t *testing.T) {
-	node1ElectionTimeout := 10
-	node2ElectionTimeout := 15
-	node3ElectionTimeout := 20
-	node4ElectionTimeout := 25
-	node5ElectionTimeout := 30
-	heartbeatInterval := 2
+	node1ElectionTimeout := int64(10)
+	node2ElectionTimeout := int64(15)
+	node3ElectionTimeout := int64(20)
+	node4ElectionTimeout := int64(25)
+	node5ElectionTimeout := int64(30)
+	heartbeatInterval := int64(2)
 
 	testCases := []struct {
 		name     string
@@ -58,6 +58,31 @@ func TestRaftClusterElection(t *testing.T) {
 				role := cluster.GetRole(1)
 
 				require.Equal(t, RoleLeader, role)
+			},
+		},
+		{
+			name: "only 1 leader is elected",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+
+				_, tick := cluster.WaitForLeader(999)
+
+				for i := 1; i < 100; i++ {
+					cluster.Tick(tick + int64(i))
+				}
+
+				leaderCount := 0
+				foundTerms := make(map[int]bool)
+
+				for i := 1; i < cluster.NodeCount()+1; i++ {
+					role := cluster.GetRole(i)
+					if role == RoleLeader {
+						leaderCount++
+					}
+					foundTerms[cluster.GetTerm(i)] = true
+				}
+
+				require.Equal(t, 1, leaderCount, "1 and only 1 leader should be elected")
+				require.Len(t, foundTerms, 1, "all nodes should have same term")
 			},
 		},
 		{
