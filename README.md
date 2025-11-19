@@ -4,17 +4,18 @@ A collection of Go projects written for learning purposes.
 
 # Projects
 
-## HTTP Server
+## Raft (wip)
 
-`cmd/httpserver/main.go`
+`cmd/raft/main.go`
 
-HTTP server from scratch using only the standard library.
+Implementation of the Raft consensus algorithm with in-memory transport. Currently work in progress, starting
+with the leader election
+mechanism.
 
 Learning points:
 
-* Manual TCP socket handling with `net`
-* HTTP request parsing and response writing
-* Concurrency with goroutines
+* More advanced concurrency
+* Deterministic testing of time sensitive code
 
 ## Bank
 
@@ -30,16 +31,17 @@ Learning points:
 * Error handling
 * Logging with `slog`
 
-## Job Queue
+## HTTP Server
 
-`cmd/jobqueue/main.go`
+`cmd/httpserver/main.go`
 
-Job queue using goroutines and channels with an async-backed synchronous API.
+HTTP server from scratch using only the standard library.
 
 Learning points:
 
-* Concurrency with goroutines and channels
-* Pattern for handling HTTP requests in an async way.
+* Manual TCP socket handling with `net`
+* HTTP request parsing and response writing
+* Concurrency with goroutines
 
 ## Node Talk
 
@@ -51,15 +53,14 @@ Learning points:
 
 * Goroutines and channels
 
-## Raft (wip)
+## Job Queue
 
-`cmd/raft/main.go`
+`cmd/jobqueue/main.go`
 
-Simple implementation of the Raft consensus algorithm with in-memory transport. Currently work in progress, starting
-with the leader election
-mechanism.
+Job queue using goroutines and channels with an async-backed synchronous API.
 
 Learning points:
 
-* More advanced concurrency
-* Deterministic testing of time sensitive code
+* Concurrency with goroutines and channels
+* Pattern for handling HTTP requests in an async way.
+
