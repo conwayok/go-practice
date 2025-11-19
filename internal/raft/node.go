@@ -123,7 +123,7 @@ func (n *node) Step(event Event, tick int64) {
 			panic(fmt.Sprintf("expected message event, got %T", event))
 		}
 
-		logger = logger.With("msgType", message.Type, "msgFrom", message.From, "msgTerm", message.Term)
+		//logger = logger.With("msgType", message.Type, "msgFrom", message.From, "msgTerm", message.Term)
 
 		if message.Type == MessageTypeAppendEntriesReq {
 			n.handleAppendEntriesRequest(logger, message, tick)
@@ -132,7 +132,7 @@ func (n *node) Step(event Event, tick int64) {
 		} else if message.Type == MessageTypeRequestVoteReq {
 			n.handleRequestVoteRequest(message)
 		} else if message.Type == MessageTypeRequestVoteRes {
-			n.handleRequestVoteResponse(message)
+			n.handleRequestVoteResponse(message, tick)
 		} else {
 			panic(fmt.Sprintf("unknown message type: %s", message.Type))
 		}
@@ -165,7 +165,7 @@ func (n *node) Outbox() []Message {
 }
 
 func (n *node) ClearOutbox() {
-	clear(n.outbox)
+	n.outbox = n.outbox[:0]
 }
 
 func (n *node) handleRequestVoteRequest(message Message) {
@@ -212,7 +212,7 @@ func (n *node) handleRequestVoteRequest(message Message) {
 	})
 }
 
-func (n *node) handleRequestVoteResponse(message Message) {
+func (n *node) handleRequestVoteResponse(message Message, tick int64) {
 	if message.Type != MessageTypeRequestVoteRes {
 		panic(fmt.Sprintf("expected %s but got %s", MessageTypeRequestVoteRes, message.Type))
 	}
@@ -226,7 +226,7 @@ func (n *node) handleRequestVoteResponse(message Message) {
 		n.votesReceived++
 		if n.votesReceived > len(n.peerIDs)/2 {
 			n.becomeLeader(n.term)
-			n.broadcastHeartbeats()
+			n.broadcastHeartbeats(tick)
 		}
 	}
 }
@@ -270,6 +270,8 @@ func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, 
 		panic("split brain detected")
 	}
 
+	n.lastHeartbeatReceivedAt = tick
+
 	successResponse := Message{
 		From: n.id,
 		To:   message.From,
@@ -277,8 +279,6 @@ func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, 
 		Ok:   true,
 		Term: n.term,
 	}
-
-	n.lastHeartbeatReceivedAt = tick
 
 	if n.role == RoleFollower {
 		n.outbox = append(n.outbox, successResponse)
@@ -302,10 +302,8 @@ func (n *node) handleTick(logger *slog.Logger, tick int64) {
 		ticksSinceLastHeartbeatSent := tick - n.lastHeartbeatSentAt
 
 		if ticksSinceLastHeartbeatSent >= n.heartbeatInterval {
-			n.broadcastHeartbeats()
+			n.broadcastHeartbeats(tick)
 		}
-
-		n.lastHeartbeatSentAt = tick
 
 		return
 	}
@@ -322,23 +320,23 @@ func (n *node) handleTick(logger *slog.Logger, tick int64) {
 		// special case for single node cluster, become leader immediately
 		if len(n.peerIDs) == 0 {
 			n.becomeLeader(n.term)
-			n.broadcastHeartbeats()
+			n.broadcastHeartbeats(tick)
 			return
 		}
+	}
 
-		for _, peerID := range n.peerIDs {
-			n.outbox = append(n.outbox, Message{
-				From: n.id,
-				To:   peerID,
-				Type: MessageTypeRequestVoteReq,
-				Term: n.term,
-				Ok:   true,
-			})
-		}
+	for _, peerID := range n.peerIDs {
+		n.outbox = append(n.outbox, Message{
+			From: n.id,
+			To:   peerID,
+			Type: MessageTypeRequestVoteReq,
+			Term: n.term,
+			Ok:   true,
+		})
 	}
 }
 
-func (n *node) broadcastHeartbeats() {
+func (n *node) broadcastHeartbeats(tick int64) {
 	if n.role != RoleLeader {
 		panic("only leader can broadcast heartbeat, current node is " + n.role)
 	}
@@ -352,6 +350,8 @@ func (n *node) broadcastHeartbeats() {
 			Term: n.term,
 		})
 	}
+
+	n.lastHeartbeatSentAt = tick
 }
 
 func (n *node) becomeLeader(term int) {

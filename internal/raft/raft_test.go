@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -19,7 +20,7 @@ func TestRaftSingleNode(t *testing.T) {
 		{
 			name: "single node will elect itself as leader",
 			testFunc: func(t *testing.T, cluster TestCluster) {
-				cluster.Tick(electionTimeout)
+				cluster.Tick(t, electionTimeout)
 				require.Equal(t, RoleLeader, cluster.GetRole(1))
 			},
 		},
@@ -53,7 +54,7 @@ func TestRaftClusterElection(t *testing.T) {
 		{
 			name: "leader will eventually be elected",
 			testFunc: func(t *testing.T, cluster TestCluster) {
-				cluster.WaitForLeader(999)
+				cluster.WaitForLeader(t, 999)
 
 				role := cluster.GetRole(1)
 
@@ -64,10 +65,10 @@ func TestRaftClusterElection(t *testing.T) {
 			name: "only 1 leader is elected",
 			testFunc: func(t *testing.T, cluster TestCluster) {
 
-				_, tick := cluster.WaitForLeader(999)
+				_, tick := cluster.WaitForLeader(t, 999)
 
 				for i := 1; i < 100; i++ {
-					cluster.Tick(tick + int64(i))
+					cluster.Tick(t, tick+int64(i))
 				}
 
 				leaderCount := 0
@@ -91,18 +92,24 @@ func TestRaftClusterElection(t *testing.T) {
 
 				tick := node1ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				// node1 should be elected first
 				require.Equal(t, RoleLeader, cluster.GetRole(1))
+
+				term := cluster.GetTerm(1)
 
 				cluster.DisableNode(1)
 
 				tick = tick + node2ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				require.Equal(t, RoleLeader, cluster.GetRole(2))
+
+				newTerm := cluster.GetTerm(2)
+
+				require.Greater(t, newTerm, term)
 			},
 		},
 		{
@@ -112,20 +119,20 @@ func TestRaftClusterElection(t *testing.T) {
 				tick := node1ElectionTimeout
 
 				// node1 is elected leader
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				cluster.DisableNode(1)
 
 				tick = tick + node2ElectionTimeout
 
 				// node 2 now elected leader
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				cluster.EnableNode(1)
 
 				tick = tick + heartbeatInterval
 
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				require.Equal(t, RoleFollower, cluster.GetRole(1))
 			},
@@ -140,22 +147,39 @@ func TestRaftClusterElection(t *testing.T) {
 
 				tick := node4ElectionTimeout
 
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(4))
 
 				tick = tick + 999
 
-				cluster.Tick(tick)
+				cluster.Tick(t, tick)
 
 				require.Equal(t, RoleCandidate, cluster.GetRole(4))
+			},
+		},
+		{
+			name: "follower failing will not cause leader change",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+				_, tick := cluster.WaitForLeader(t, 999)
+
+				require.Equal(t, RoleLeader, cluster.GetRole(1))
+
+				cluster.DisableNode(2)
+
+				for i := tick; i < 1000; i++ {
+					cluster.Tick(t, tick+i)
+				}
+
+				require.Equal(t, RoleLeader, cluster.GetRole(1))
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			//logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			node1 := NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
 			node2 := NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
 			node3 := NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)

@@ -3,12 +3,13 @@ package raft
 import (
 	"fmt"
 	"log/slog"
+	"testing"
 )
 
 type TestCluster interface {
-	Tick(tick int64)
+	Tick(t *testing.T, tick int64)
 	GetRole(id int) Role
-	WaitForLeader(timeout int64) (leaderID int, tick int64)
+	WaitForLeader(t *testing.T, timeout int64) (leaderID int, tick int64)
 	EnableNode(id int)
 	DisableNode(id int)
 	NodeCount() int
@@ -43,35 +44,47 @@ func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
 }
 
-func (tc *testCluster) Tick(tick int64) {
+func (tc *testCluster) collectOutboxMessages() []Message {
+	messages := make([]Message, 0)
+
+	for _, n := range tc.nodes {
+		outbox := n.Outbox()
+		messages = append(messages, outbox...)
+		n.ClearOutbox()
+	}
+
+	return messages
+}
+
+func (tc *testCluster) Tick(t *testing.T, tick int64) {
+	t.Helper()
+
 	for _, n := range tc.nodes {
 		n.Step(Tick{}, tick)
 	}
 
-	queue := make([]Message, 0)
+	messages := tc.collectOutboxMessages()
 
-	// initial batch
-	for _, n := range tc.nodes {
-		queue = append(queue, n.Outbox()...)
-		n.ClearOutbox()
-	}
+	for len(messages) > 0 {
+		for _, message := range messages {
 
-	// flush until no new messages
-	for len(queue) > 0 {
-		msg := queue[0]
-		queue = queue[1:]
+			if tc.disabledNodes[message.From] ||
+				tc.disabledNodes[message.To] {
+				t.Logf("drop message %+v", message)
+				continue
+			}
 
-		if tc.disabledNodes[msg.From] || tc.disabledNodes[msg.To] {
-			continue
+			t.Logf("send message %+v", message)
+
+			targetNode, ok := tc.nodes[message.To]
+
+			if !ok {
+				continue
+			}
+
+			targetNode.Step(message, tick)
 		}
-
-		if target, ok := tc.nodes[msg.To]; ok {
-			target.Step(msg, tick)
-
-			// collect new messages
-			queue = append(queue, target.Outbox()...)
-			target.ClearOutbox()
-		}
+		messages = tc.collectOutboxMessages()
 	}
 }
 
@@ -95,11 +108,13 @@ func (tc *testCluster) getLeader() int {
 	return 0
 }
 
-func (tc *testCluster) WaitForLeader(timeout int64) (leaderID int, tick int64) {
+func (tc *testCluster) WaitForLeader(t *testing.T, timeout int64) (leaderID int, tick int64) {
+	t.Helper()
+
 	tick = 0
 
 	for {
-		tc.Tick(tick)
+		tc.Tick(t, tick)
 		leaderID := tc.getLeader()
 
 		if leaderID != 0 {
