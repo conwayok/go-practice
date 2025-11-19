@@ -8,9 +8,9 @@ import (
 type Role string
 
 const (
-	RoleFollower  Role = "follower"
-	RoleCandidate Role = "candidate"
-	RoleLeader    Role = "leader"
+	RoleFollower  Role = "Follower"
+	RoleCandidate Role = "Candidate"
+	RoleLeader    Role = "Leader"
 )
 
 type Event any
