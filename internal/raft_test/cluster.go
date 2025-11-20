@@ -84,11 +84,11 @@ func (tc *testCluster) Tick(t *testing.T, tick int64) {
 
 			if tc.disabledNodes[message.From] ||
 				tc.disabledNodes[message.To] {
-				t.Logf("drop message %+v", message)
+				t.Logf("tick %d, drop msg %+v", tick, message)
 				continue
 			}
 
-			t.Logf("send message %+v", message)
+			t.Logf("tick %d, send msg %+v", tick, message)
 
 			targetNode, ok := tc.nodes[message.To]
 

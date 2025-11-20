@@ -323,16 +323,16 @@ func (n *node) handleTick(logger *slog.Logger, tick int64) {
 			n.broadcastHeartbeats(tick)
 			return
 		}
-	}
 
-	for _, peerID := range n.peerIDs {
-		n.outbox = append(n.outbox, Message{
-			From: n.id,
-			To:   peerID,
-			Type: MessageTypeRequestVoteReq,
-			Term: n.term,
-			Ok:   true,
-		})
+		for _, peerID := range n.peerIDs {
+			n.outbox = append(n.outbox, Message{
+				From: n.id,
+				To:   peerID,
+				Type: MessageTypeRequestVoteReq,
+				Term: n.term,
+				Ok:   true,
+			})
+		}
 	}
 }
 
