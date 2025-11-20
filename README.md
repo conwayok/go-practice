@@ -26,8 +26,8 @@ Simple banking system with deposits, withdrawals, and transfers.
 Learning points:
 
 * HTTP API with `chi`
-* Integration testing with testcontainers-go
-* Database operations with pgx
+* Integration testing with `testcontainers-go`
+* Database operations with `pgx`
 * Error handling
 * Logging with `slog`
 
