@@ -1,15 +1,16 @@
-package raft
+package raft_test
 
 import (
 	"fmt"
+	"go-practice/internal/raft"
 	"log/slog"
 	"testing"
 )
 
 type TestCluster interface {
 	Tick(t *testing.T, tick int64)
-	GetRole(id int) Role
-	GetRoleNodeCount(role Role) int
+	GetRole(id int) raft.Role
+	GetRoleNodeCount(role raft.Role) int
 	WaitForLeader(t *testing.T, timeout int64) (leaderID int, tick int64)
 	EnableNode(id int)
 	DisableNode(id int)
@@ -18,12 +19,12 @@ type TestCluster interface {
 }
 
 type testCluster struct {
-	nodes         map[int]Node
+	nodes         map[int]raft.Node
 	logger        *slog.Logger
 	disabledNodes map[int]bool
 }
 
-func (tc *testCluster) GetRoleNodeCount(role Role) int {
+func (tc *testCluster) GetRoleNodeCount(role raft.Role) int {
 	count := 0
 
 	for _, n := range tc.nodes {
@@ -43,8 +44,8 @@ func (tc *testCluster) NodeCount() int {
 	return len(tc.nodes)
 }
 
-func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
-	nodesMap := make(map[int]Node)
+func NewTestCluster(nodes []raft.Node, logger *slog.Logger) TestCluster {
+	nodesMap := make(map[int]raft.Node)
 
 	for _, node := range nodes {
 		nodesMap[node.ID()] = node
@@ -57,8 +58,8 @@ func NewTestCluster(nodes []Node, logger *slog.Logger) TestCluster {
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
 }
 
-func (tc *testCluster) collectOutboxMessages() []Message {
-	messages := make([]Message, 0)
+func (tc *testCluster) collectOutboxMessages() []raft.Message {
+	messages := make([]raft.Message, 0)
 
 	for _, n := range tc.nodes {
 		outbox := n.Outbox()
@@ -73,7 +74,7 @@ func (tc *testCluster) Tick(t *testing.T, tick int64) {
 	t.Helper()
 
 	for _, n := range tc.nodes {
-		n.Step(Tick{}, tick)
+		n.Step(raft.Tick{}, tick)
 	}
 
 	messages := tc.collectOutboxMessages()
@@ -101,7 +102,7 @@ func (tc *testCluster) Tick(t *testing.T, tick int64) {
 	}
 }
 
-func (tc *testCluster) GetRole(id int) Role {
+func (tc *testCluster) GetRole(id int) raft.Role {
 	n, ok := tc.nodes[id]
 
 	if ok {
@@ -113,7 +114,7 @@ func (tc *testCluster) GetRole(id int) Role {
 
 func (tc *testCluster) getLeader() int {
 	for _, n := range tc.nodes {
-		if n.Role() == RoleLeader {
+		if n.Role() == raft.RoleLeader {
 			return n.ID()
 		}
 	}

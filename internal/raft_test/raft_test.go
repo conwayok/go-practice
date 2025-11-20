@@ -1,6 +1,7 @@
-package raft
+package raft_test
 
 import (
+	"go-practice/internal/raft"
 	"io"
 	"log/slog"
 	"os"
@@ -21,7 +22,7 @@ func TestRaftSingleNode(t *testing.T) {
 			name: "single node will elect itself as leader",
 			testFunc: func(t *testing.T, cluster TestCluster) {
 				cluster.Tick(t, electionTimeout)
-				require.Equal(t, RoleLeader, cluster.GetRole(1))
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
 			},
 		},
 	}
@@ -30,9 +31,9 @@ func TestRaftSingleNode(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			node1 := NewNode(1, logger.With("node", 1), make([]int, 0), electionTimeout, heartbeatInterval)
+			node1 := raft.NewNode(1, logger.With("node", 1), make([]int, 0), electionTimeout, heartbeatInterval)
 
-			cluster := NewTestCluster([]Node{node1}, logger)
+			cluster := NewTestCluster([]raft.Node{node1}, logger)
 
 			testCase.testFunc(t, cluster)
 		})
@@ -58,7 +59,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				role := cluster.GetRole(1)
 
-				require.Equal(t, RoleLeader, role)
+				require.Equal(t, raft.RoleLeader, role)
 			},
 		},
 		{
@@ -76,7 +77,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				for i := 1; i < cluster.NodeCount()+1; i++ {
 					role := cluster.GetRole(i)
-					if role == RoleLeader {
+					if role == raft.RoleLeader {
 						leaderCount++
 					}
 					foundTerms[cluster.GetTerm(i)] = true
@@ -95,7 +96,7 @@ func TestRaftClusterElection(t *testing.T) {
 				cluster.Tick(t, tick)
 
 				// node1 should be elected first
-				require.Equal(t, RoleLeader, cluster.GetRole(1))
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
 
 				term := cluster.GetTerm(1)
 
@@ -105,7 +106,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, RoleLeader, cluster.GetRole(2))
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(2))
 
 				newTerm := cluster.GetTerm(2)
 
@@ -134,7 +135,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, RoleFollower, cluster.GetRole(1))
+				require.Equal(t, raft.RoleFollower, cluster.GetRole(1))
 			},
 		},
 		{
@@ -149,13 +150,13 @@ func TestRaftClusterElection(t *testing.T) {
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, RoleCandidate, cluster.GetRole(4))
+				require.Equal(t, raft.RoleCandidate, cluster.GetRole(4))
 
 				tick = tick + 999
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, RoleCandidate, cluster.GetRole(4))
+				require.Equal(t, raft.RoleCandidate, cluster.GetRole(4))
 			},
 		},
 		{
@@ -163,7 +164,7 @@ func TestRaftClusterElection(t *testing.T) {
 			testFunc: func(t *testing.T, cluster TestCluster) {
 				_, tick := cluster.WaitForLeader(t, 999)
 
-				require.Equal(t, RoleLeader, cluster.GetRole(1))
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
 
 				cluster.DisableNode(2)
 
@@ -171,7 +172,7 @@ func TestRaftClusterElection(t *testing.T) {
 					cluster.Tick(t, tick+i)
 				}
 
-				require.Equal(t, RoleLeader, cluster.GetRole(1))
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
 			},
 		},
 	}
@@ -180,12 +181,12 @@ func TestRaftClusterElection(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 			//logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			node1 := NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
-			node2 := NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
-			node3 := NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)
-			node4 := NewNode(4, logger.With("node", 4), []int{1, 2, 3, 5}, node4ElectionTimeout, heartbeatInterval)
-			node5 := NewNode(5, logger.With("node", 5), []int{1, 2, 3, 4}, node5ElectionTimeout, heartbeatInterval)
-			cluster := NewTestCluster([]Node{node1, node2, node3, node4, node5}, logger)
+			node1 := raft.NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
+			node2 := raft.NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
+			node3 := raft.NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)
+			node4 := raft.NewNode(4, logger.With("node", 4), []int{1, 2, 3, 5}, node4ElectionTimeout, heartbeatInterval)
+			node5 := raft.NewNode(5, logger.With("node", 5), []int{1, 2, 3, 4}, node5ElectionTimeout, heartbeatInterval)
+			cluster := NewTestCluster([]raft.Node{node1, node2, node3, node4, node5}, logger)
 
 			testCase.testFunc(t, cluster)
 		})
