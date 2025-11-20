@@ -6,7 +6,7 @@ A collection of Go projects written for learning purposes.
 
 ## Raft (wip)
 
-`cmd/raft/main.go`
+`internal/raft`
 
 Implementation of the Raft consensus algorithm with in-memory transport. Currently work in progress, starting
 with the leader election

@@ -9,6 +9,7 @@ import (
 type TestCluster interface {
 	Tick(t *testing.T, tick int64)
 	GetRole(id int) Role
+	GetRoleNodeCount(role Role) int
 	WaitForLeader(t *testing.T, timeout int64) (leaderID int, tick int64)
 	EnableNode(id int)
 	DisableNode(id int)
@@ -20,6 +21,18 @@ type testCluster struct {
 	nodes         map[int]Node
 	logger        *slog.Logger
 	disabledNodes map[int]bool
+}
+
+func (tc *testCluster) GetRoleNodeCount(role Role) int {
+	count := 0
+
+	for _, n := range tc.nodes {
+		if n.Role() == role {
+			count++
+		}
+	}
+
+	return count
 }
 
 func (tc *testCluster) GetTerm(id int) int {
