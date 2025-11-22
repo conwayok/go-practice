@@ -13,15 +13,23 @@ type TestCluster interface {
 	GetRoleNodeCount(role raft.Role) int
 	WaitForLeader(t *testing.T, timeout int64) (leaderID int, tick int64)
 	EnableNode(id int)
+	// DisableNode convenience method to drop all messages to and from the node
 	DisableNode(id int)
+	// SetDropMessageFilter sets a function where if the predicate returns true, the message will be dropped
+	SetDropMessageFilter(filter func(message raft.Message, tick int64) bool)
 	NodeCount() int
 	GetTerm(id int) int
 }
 
 type testCluster struct {
-	nodes         map[int]raft.Node
-	logger        *slog.Logger
-	disabledNodes map[int]bool
+	nodes           map[int]raft.Node
+	logger          *slog.Logger
+	disabledNodes   map[int]bool
+	dropMessageFunc func(message raft.Message, tick int64) bool
+}
+
+func (tc *testCluster) SetDropMessageFilter(dropMessageFunc func(message raft.Message, tick int64) bool) {
+	tc.dropMessageFunc = dropMessageFunc
 }
 
 func (tc *testCluster) GetRoleNodeCount(role raft.Role) int {
@@ -55,7 +63,7 @@ func NewTestCluster(nodes []raft.Node, logger *slog.Logger) TestCluster {
 		panic("detected duplicate node IDs")
 	}
 
-	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool)}
+	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool), dropMessageFunc: nil}
 }
 
 func (tc *testCluster) collectOutboxMessages() []raft.Message {
@@ -82,8 +90,16 @@ func (tc *testCluster) Tick(t *testing.T, tick int64) {
 	for len(messages) > 0 {
 		for _, message := range messages {
 
+			drop := false
+
 			if tc.disabledNodes[message.From] ||
 				tc.disabledNodes[message.To] {
+				drop = true
+			} else if tc.dropMessageFunc != nil {
+				drop = tc.dropMessageFunc(message, tick)
+			}
+
+			if drop {
 				t.Logf("tick %d, drop msg %+v", tick, message)
 				continue
 			}

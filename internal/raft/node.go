@@ -292,6 +292,8 @@ func (n *node) handleAppendEntriesRequest(logger *slog.Logger, message Message, 
 		n.becomeFollower(message.Term)
 
 		n.outbox = append(n.outbox, successResponse)
+
+		return
 	}
 
 	panic("unknown role: " + n.role)

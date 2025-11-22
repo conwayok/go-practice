@@ -2,7 +2,6 @@ package raft_test
 
 import (
 	"go-practice/internal/raft"
-	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -175,12 +174,26 @@ func TestRaftClusterElection(t *testing.T) {
 				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
 			},
 		},
+		{
+			name: "leader will still emerge if election fails mid process",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+
+				// drop all vote responses for node 1
+				cluster.SetDropMessageFilter(func(message raft.Message, tick int64) bool {
+					return message.To == 1 && message.Type == raft.MessageTypeRequestVoteRes
+				})
+
+				cluster.WaitForLeader(t, 999)
+
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(2))
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			//logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			//logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			node1 := raft.NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
 			node2 := raft.NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
 			node3 := raft.NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)
