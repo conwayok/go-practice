@@ -9,42 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRaftSingleNode(t *testing.T) {
-	electionTimeout := int64(10)
-	heartbeatInterval := int64(2)
-
-	testCases := []struct {
-		name     string
-		testFunc func(t *testing.T, cluster TestCluster)
-	}{
-		{
-			name: "single node will elect itself as leader",
-			testFunc: func(t *testing.T, cluster TestCluster) {
-				cluster.Tick(t, electionTimeout)
-				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
-			},
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-			cluster := NewTestCluster(1, []int64{electionTimeout}, heartbeatInterval, logger)
-
-			testCase.testFunc(t, cluster)
-		})
-	}
-}
-
 func TestRaftClusterElection(t *testing.T) {
-	//node1ElectionTimeout := int64(10)
-	//node2ElectionTimeout := int64(15)
-	//node3ElectionTimeout := int64(20)
-	//node4ElectionTimeout := int64(25)
-	//node5ElectionTimeout := int64(30)
-	//heartbeatInterval := int64(2)
-
 	testCases := []struct {
 		name              string
 		nodeCount         int
@@ -52,6 +17,16 @@ func TestRaftClusterElection(t *testing.T) {
 		heartbeatInterval int64
 		testFunc          func(t *testing.T, cluster TestCluster)
 	}{
+		{
+			name:              "single node cluster will elect itself as leader",
+			nodeCount:         1,
+			electionTimeouts:  []int64{10},
+			heartbeatInterval: 2,
+			testFunc: func(t *testing.T, cluster TestCluster) {
+				cluster.Tick(t, 10)
+				require.Equal(t, raft.RoleLeader, cluster.GetRole(1))
+			},
+		},
 		{
 			name: "leader will eventually be elected",
 			testFunc: func(t *testing.T, cluster TestCluster) {
@@ -201,12 +176,6 @@ func TestRaftClusterElection(t *testing.T) {
 				leader, _ := cluster.WaitForLeader(t, 100)
 
 				t.Logf("leader elected: %d", leader)
-			},
-		},
-		{
-			name: "nodes can only vote once per term",
-			testFunc: func(t *testing.T, cluster TestCluster) {
-				// todo: implement
 			},
 		},
 	}

@@ -381,16 +381,11 @@ func (n *node) becomeCandidate(term int) {
 }
 
 func (n *node) becomeFollower(term int) {
-	// todo: a node can only vote at most once per term, so voted for should only be reset if term changes.
-	// todo: write a test that triggers this case, then implement the fix here.
-	//if n.term != term {
-	//	n.term = term
-	//	n.votedFor = 0
-	//}
+	if n.term != term {
+		n.term = term
+		n.votedFor = 0
+	}
 
-	n.term = term
 	n.role = RoleFollower
-
-	n.votedFor = 0
 	n.votesReceived = 0
 }
