@@ -378,14 +378,15 @@ func (n *node) becomeCandidate(term int) {
 }
 
 func (n *node) becomeFollower(term int) {
-	n.role = RoleFollower
-	n.term = term
+	// todo: a node can only vote at most once per term, so voted for should only be reset if term changes.
+	// todo: write a test that triggers this case, then implement the fix here.
+	//if n.term != term {
+	//	n.term = term
+	//	n.votedFor = 0
+	//}
 
-	// todo: reset logic for etcd raft looks like below, need to figure out why
-	//	if r.Term != term {
-	//		r.Term = term
-	//		r.Vote = None
-	//	}
+	n.term = term
+	n.role = RoleFollower
 
 	n.votedFor = 0
 	n.votesReceived = 0

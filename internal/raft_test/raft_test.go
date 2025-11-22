@@ -188,6 +188,12 @@ func TestRaftClusterElection(t *testing.T) {
 				require.Equal(t, raft.RoleLeader, cluster.GetRole(2))
 			},
 		},
+		{
+			name: "nodes can only vote once per term",
+			testFunc: func(t *testing.T, cluster TestCluster) {
+				// todo: implement
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

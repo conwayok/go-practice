@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-practice/internal/raft"
 	"log/slog"
+	"slices"
 	"testing"
 )
 
@@ -17,15 +18,21 @@ type TestCluster interface {
 	DisableNode(id int)
 	// SetDropMessageFilter sets a function where if the predicate returns true, the message will be dropped
 	SetDropMessageFilter(filter func(message raft.Message, tick int64) bool)
+	SetMessageSorter(sorter func(a, b raft.Message) int)
 	NodeCount() int
 	GetTerm(id int) int
 }
 
 type testCluster struct {
-	nodes           map[int]raft.Node
-	logger          *slog.Logger
-	disabledNodes   map[int]bool
-	dropMessageFunc func(message raft.Message, tick int64) bool
+	nodes             map[int]raft.Node
+	logger            *slog.Logger
+	disabledNodes     map[int]bool
+	dropMessageFunc   func(message raft.Message, tick int64) bool
+	messageSorterFunc func(a, b raft.Message) int
+}
+
+func (tc *testCluster) SetMessageSorter(sorter func(a, b raft.Message) int) {
+	tc.messageSorterFunc = sorter
 }
 
 func (tc *testCluster) SetDropMessageFilter(dropMessageFunc func(message raft.Message, tick int64) bool) {
@@ -73,6 +80,10 @@ func (tc *testCluster) collectOutboxMessages() []raft.Message {
 		outbox := n.Outbox()
 		messages = append(messages, outbox...)
 		n.ClearOutbox()
+	}
+
+	if tc.messageSorterFunc != nil {
+		slices.SortStableFunc(messages, tc.messageSorterFunc)
 	}
 
 	return messages
