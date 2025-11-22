@@ -59,15 +59,33 @@ func (tc *testCluster) NodeCount() int {
 	return len(tc.nodes)
 }
 
-func NewTestCluster(nodes []raft.Node, logger *slog.Logger) TestCluster {
-	nodesMap := make(map[int]raft.Node)
+func NewTestCluster(nodeCount int, electionTimeouts []int64, heartbeatInterval int64, logger *slog.Logger) TestCluster {
 
-	for _, node := range nodes {
-		nodesMap[node.ID()] = node
+	if nodeCount != len(electionTimeouts) {
+		panic("nodeCount must be equal to electionTimeouts len")
 	}
 
-	if len(nodesMap) != len(nodes) {
-		panic("detected duplicate node IDs")
+	allNodeIds := make([]int, 0)
+
+	for i := 1; i <= nodeCount; i++ {
+		allNodeIds = append(allNodeIds, i)
+	}
+
+	nodesMap := make(map[int]raft.Node)
+
+	for _, id := range allNodeIds {
+		otherNodeIds := make([]int, 0)
+
+		for _, nodeId := range allNodeIds {
+			if nodeId == id {
+				continue
+			}
+			otherNodeIds = append(otherNodeIds, nodeId)
+		}
+
+		node := raft.NewNode(id, logger.With("node", id), otherNodeIds, electionTimeouts[id-1], heartbeatInterval)
+
+		nodesMap[id] = node
 	}
 
 	return &testCluster{nodes: nodesMap, logger: logger, disabledNodes: make(map[int]bool), dropMessageFunc: nil}

@@ -2,6 +2,7 @@ package raft_test
 
 import (
 	"go-practice/internal/raft"
+	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -30,9 +31,7 @@ func TestRaftSingleNode(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			node1 := raft.NewNode(1, logger.With("node", 1), make([]int, 0), electionTimeout, heartbeatInterval)
-
-			cluster := NewTestCluster([]raft.Node{node1}, logger)
+			cluster := NewTestCluster(1, []int64{electionTimeout}, heartbeatInterval, logger)
 
 			testCase.testFunc(t, cluster)
 		})
@@ -198,14 +197,16 @@ func TestRaftClusterElection(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			//logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			node1 := raft.NewNode(1, logger.With("node", 1), []int{2, 3, 4, 5}, node1ElectionTimeout, heartbeatInterval)
-			node2 := raft.NewNode(2, logger.With("node", 2), []int{1, 3, 4, 5}, node2ElectionTimeout, heartbeatInterval)
-			node3 := raft.NewNode(3, logger.With("node", 3), []int{1, 2, 4, 5}, node3ElectionTimeout, heartbeatInterval)
-			node4 := raft.NewNode(4, logger.With("node", 4), []int{1, 2, 3, 5}, node4ElectionTimeout, heartbeatInterval)
-			node5 := raft.NewNode(5, logger.With("node", 5), []int{1, 2, 3, 4}, node5ElectionTimeout, heartbeatInterval)
-			cluster := NewTestCluster([]raft.Node{node1, node2, node3, node4, node5}, logger)
+			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			//logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+			cluster := NewTestCluster(5, []int64{
+				node1ElectionTimeout,
+				node2ElectionTimeout,
+				node3ElectionTimeout,
+				node4ElectionTimeout,
+				node5ElectionTimeout,
+			}, heartbeatInterval, logger)
 
 			testCase.testFunc(t, cluster)
 		})
