@@ -317,6 +317,9 @@ func (n *node) handleTick(logger *slog.Logger, tick int64) {
 
 		logger.Info("starting election", "newTerm", term)
 
+		// reset heartbeat timer, so elections trigger at least electionTimeout after each other
+		n.lastHeartbeatReceivedAt = tick
+
 		n.becomeCandidate(term)
 
 		// special case for single node cluster, become leader immediately

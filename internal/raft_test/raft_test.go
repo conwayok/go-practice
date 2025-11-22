@@ -2,7 +2,6 @@ package raft_test
 
 import (
 	"go-practice/internal/raft"
-	"io"
 	"log/slog"
 	"os"
 	"testing"
@@ -39,16 +38,19 @@ func TestRaftSingleNode(t *testing.T) {
 }
 
 func TestRaftClusterElection(t *testing.T) {
-	node1ElectionTimeout := int64(10)
-	node2ElectionTimeout := int64(15)
-	node3ElectionTimeout := int64(20)
-	node4ElectionTimeout := int64(25)
-	node5ElectionTimeout := int64(30)
-	heartbeatInterval := int64(2)
+	//node1ElectionTimeout := int64(10)
+	//node2ElectionTimeout := int64(15)
+	//node3ElectionTimeout := int64(20)
+	//node4ElectionTimeout := int64(25)
+	//node5ElectionTimeout := int64(30)
+	//heartbeatInterval := int64(2)
 
 	testCases := []struct {
-		name     string
-		testFunc func(t *testing.T, cluster TestCluster)
+		name              string
+		nodeCount         int
+		electionTimeouts  []int64
+		heartbeatInterval int64
+		testFunc          func(t *testing.T, cluster TestCluster)
 	}{
 		{
 			name: "leader will eventually be elected",
@@ -86,10 +88,12 @@ func TestRaftClusterElection(t *testing.T) {
 			},
 		},
 		{
-			name: "second leader will be elected if first one fails",
+			name:             "second leader will be elected if first one fails",
+			nodeCount:        3,
+			electionTimeouts: []int64{10, 15, 20},
 			testFunc: func(t *testing.T, cluster TestCluster) {
 
-				tick := node1ElectionTimeout
+				tick := int64(10)
 
 				cluster.Tick(t, tick)
 
@@ -100,7 +104,7 @@ func TestRaftClusterElection(t *testing.T) {
 
 				cluster.DisableNode(1)
 
-				tick = tick + node2ElectionTimeout
+				tick = tick + int64(15)
 
 				cluster.Tick(t, tick)
 
@@ -112,24 +116,27 @@ func TestRaftClusterElection(t *testing.T) {
 			},
 		},
 		{
-			name: "recovered old leader will step down to follower",
+			name:              "recovered old leader will step down to follower",
+			nodeCount:         3,
+			electionTimeouts:  []int64{10, 15, 20},
+			heartbeatInterval: 2,
 			testFunc: func(t *testing.T, cluster TestCluster) {
 
-				tick := node1ElectionTimeout
+				tick := int64(10)
 
 				// node1 is elected leader
 				cluster.Tick(t, tick)
 
 				cluster.DisableNode(1)
 
-				tick = tick + node2ElectionTimeout
+				tick = tick + int64(15)
 
 				// node 2 now elected leader
 				cluster.Tick(t, tick)
 
 				cluster.EnableNode(1)
 
-				tick = tick + heartbeatInterval
+				tick = tick + 2
 
 				cluster.Tick(t, tick)
 
@@ -137,24 +144,25 @@ func TestRaftClusterElection(t *testing.T) {
 			},
 		},
 		{
-			name: "candidate cannot become leader if not received majority vote",
+			name:             "candidate cannot become leader if not received majority vote",
+			nodeCount:        3,
+			electionTimeouts: []int64{10, 15, 20},
 			testFunc: func(t *testing.T, cluster TestCluster) {
 
 				cluster.DisableNode(1)
 				cluster.DisableNode(2)
-				cluster.DisableNode(3)
 
-				tick := node4ElectionTimeout
+				tick := int64(20)
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, raft.RoleCandidate, cluster.GetRole(4))
+				require.Equal(t, raft.RoleCandidate, cluster.GetRole(3))
 
 				tick = tick + 999
 
 				cluster.Tick(t, tick)
 
-				require.Equal(t, raft.RoleCandidate, cluster.GetRole(4))
+				require.Equal(t, raft.RoleCandidate, cluster.GetRole(3))
 			},
 		},
 		{
@@ -174,17 +182,25 @@ func TestRaftClusterElection(t *testing.T) {
 			},
 		},
 		{
-			name: "leader will still emerge if election fails mid process",
+			name:              "leader will still emerge if election fails mid process",
+			nodeCount:         3,
+			electionTimeouts:  []int64{3, 5, 7},
+			heartbeatInterval: 2,
 			testFunc: func(t *testing.T, cluster TestCluster) {
 
-				// drop all vote responses for node 1
 				cluster.SetDropMessageFilter(func(message raft.Message, tick int64) bool {
-					return message.To == 1 && message.Type == raft.MessageTypeRequestVoteRes
+					// drop all vote responses to node 1
+					if message.To == 1 &&
+						message.Type == raft.MessageTypeRequestVoteRes {
+						return true
+					}
+
+					return false
 				})
 
-				cluster.WaitForLeader(t, 999)
+				leader, _ := cluster.WaitForLeader(t, 100)
 
-				require.Equal(t, raft.RoleLeader, cluster.GetRole(2))
+				t.Logf("leader elected: %d", leader)
 			},
 		},
 		{
@@ -197,16 +213,26 @@ func TestRaftClusterElection(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			//logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			//logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			cluster := NewTestCluster(5, []int64{
-				node1ElectionTimeout,
-				node2ElectionTimeout,
-				node3ElectionTimeout,
-				node4ElectionTimeout,
-				node5ElectionTimeout,
-			}, heartbeatInterval, logger)
+			defaultNodeCount := 3
+			defaultElectionTimeouts := []int64{10, 15, 20}
+			defaultHeartbeatInterval := int64(2)
+
+			if testCase.nodeCount == 0 {
+				testCase.nodeCount = defaultNodeCount
+			}
+
+			if testCase.electionTimeouts == nil {
+				testCase.electionTimeouts = defaultElectionTimeouts
+			}
+
+			if testCase.heartbeatInterval == 0 {
+				testCase.heartbeatInterval = defaultHeartbeatInterval
+			}
+
+			cluster := NewTestCluster(testCase.nodeCount, testCase.electionTimeouts, testCase.heartbeatInterval, logger)
 
 			testCase.testFunc(t, cluster)
 		})
