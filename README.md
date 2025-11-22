@@ -4,17 +4,15 @@ A collection of Go projects written for learning purposes.
 
 # Projects
 
-## Raft (wip)
+## Raft (leader election only)
 
 `internal/raft`
 
-Implementation of the Raft consensus algorithm with in-memory transport. Currently work in progress, starting
-with the leader election
-mechanism.
+Implementation of the Raft consensus leader election with in-memory transport.
 
 Learning points:
 
-* More advanced concurrency
+* Raft consensus algorithm
 * Deterministic testing of time sensitive code
 
 ## Bank
