@@ -23,15 +23,15 @@ var logger *slog.Logger
 var nodeURLMap = make(map[int]string)
 
 func main() {
-	logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-
 	nodeId, err := getEnvAsInt("RAFT_NODE_ID")
 
 	if err != nil {
 		panic(err)
 	}
+
+	logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})).With("node", nodeId)
 
 	nodeCount, err := getEnvAsInt("RAFT_NODE_COUNT")
 
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	tick = 0
-	node = raft.NewNode(nodeId, logger.With("node", nodeId), peerIDs, int64(electionTimeout), int64(heartbeatInterval))
+	node = raft.NewNode(nodeId, logger, peerIDs, int64(electionTimeout), int64(heartbeatInterval))
 
 	router := chi.NewRouter()
 
