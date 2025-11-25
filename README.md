@@ -6,7 +6,7 @@ A collection of Go projects written for learning purposes.
 
 ## Raft (leader election only)
 
-`internal/raft`
+`cmd/raft/main.go`, `docker-compose.raft.yaml`
 
 Implementation of the Raft consensus leader election with in-memory transport.
 
@@ -14,6 +14,10 @@ Learning points:
 
 * Raft consensus algorithm
 * Deterministic testing of time sensitive code
+
+Notes:
+
+* The `docker-compose.raft.yaml` file can be used to run the Raft cluster locally.
 
 ## Bank
 
