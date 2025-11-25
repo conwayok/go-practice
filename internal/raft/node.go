@@ -25,11 +25,11 @@ const (
 )
 
 type Message struct {
-	From int
-	To   int
-	Type MessageType
-	Ok   bool
-	Term int
+	From int         `json:"from"`
+	To   int         `json:"to"`
+	Type MessageType `json:"type"`
+	Ok   bool        `json:"ok"`
+	Term int         `json:"term"`
 }
 
 type Tick struct{}

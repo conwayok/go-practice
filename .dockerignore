@@ -1,0 +1,5 @@
+.git
+.idea
+local-env
+README.md
+**/*.http

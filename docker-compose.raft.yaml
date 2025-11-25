@@ -1,0 +1,33 @@
+x-common-build: &raft-common-build
+  context: .
+  dockerfile: cmd/raft/Dockerfile
+
+x-common-env: &raft-common-env
+  RAFT_HEARTBEAT_INTERVAL: 400
+  RAFT_NODE_COUNT: 3
+  RAFT_NODE_1_URL: http://node1:5889
+  RAFT_NODE_2_URL: http://node2:5889
+  RAFT_NODE_3_URL: http://node3:5889
+
+services:
+  node1:
+    build:
+      <<: *raft-common-build
+    environment:
+      <<: *raft-common-env
+      RAFT_NODE_ID: 1
+      RAFT_ELECTION_TIMEOUT: 1000
+  node2:
+    build:
+      <<: *raft-common-build
+    environment:
+      <<: *raft-common-env
+      RAFT_NODE_ID: 2
+      RAFT_ELECTION_TIMEOUT: 1500
+  node3:
+    build:
+      <<: *raft-common-build
+    environment:
+      <<: *raft-common-env
+      RAFT_NODE_ID: 3
+      RAFT_ELECTION_TIMEOUT: 2000
