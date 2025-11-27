@@ -21,6 +21,7 @@ var tick int64
 var inbox = make(chan any)
 var logger *slog.Logger
 var nodeURLMap = make(map[int]string)
+var httpClient *http.Client
 
 func main() {
 	nodeId, err := getEnvAsInt("RAFT_NODE_ID")
@@ -61,6 +62,10 @@ func main() {
 
 	if err != nil {
 		panic(err)
+	}
+
+	httpClient = &http.Client{
+		Timeout: 5 * time.Second,
 	}
 
 	tick = 0
@@ -170,7 +175,7 @@ func sendMessageToPeer(msg raft.Message) {
 		return
 	}
 
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBytes))
+	res, err := httpClient.Post(url, "application/json", bytes.NewBuffer(jsonBytes))
 
 	if err != nil {
 		logger.Error("failed to send message", "error", err)
