@@ -65,7 +65,7 @@ func NewTestCluster(nodeCount int, electionTimeouts []int64, heartbeatInterval i
 		panic("nodeCount must be equal to electionTimeouts len")
 	}
 
-	allNodeIds := make([]int, 0)
+	var allNodeIds []int
 
 	for i := 1; i <= nodeCount; i++ {
 		allNodeIds = append(allNodeIds, i)
@@ -74,7 +74,7 @@ func NewTestCluster(nodeCount int, electionTimeouts []int64, heartbeatInterval i
 	nodesMap := make(map[int]raft.Node)
 
 	for _, id := range allNodeIds {
-		otherNodeIds := make([]int, 0)
+		var otherNodeIds []int
 
 		for _, nodeId := range allNodeIds {
 			if nodeId == id {

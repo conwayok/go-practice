@@ -36,7 +36,7 @@ func main() {
 
 	nodeCount, err := getEnvAsInt("RAFT_NODE_COUNT")
 
-	peerIDs := make([]int, 0)
+	var peerIDs []int
 
 	for i := 1; i <= nodeCount; i++ {
 		url, err := getEnvAsString(fmt.Sprintf("RAFT_NODE_%d_URL", i))
