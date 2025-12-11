@@ -4,6 +4,6 @@ services:
     ports:
       - "15432:5432"
     volumes:
-      - "./init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "./bank-init.sql:/docker-entrypoint-initdb.d/bank-init.sql"
     environment:
       - "POSTGRES_PASSWORD=testpostgres"
